@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Accounts - Aiaxcart Premium Shop</title>
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+    <header>
+        <div class="container nav-container">
+            <div class="logo">
+                <span>🛒</span> AIaxcart Premium Shop
+            </div>
+            <nav>
+                <ul>
+                    <li><a href="../index.html" class="nav-link">Home</a></li>
+                    <li><a href="accounts.html" class="nav-link active">My Accounts</a></li>
+                    <li><a href="feedback.html" class="nav-link">Feedback</a></li>
+                </ul>
+            </nav>
+            <div class="auth-buttons">
+                <button class="btn btn-outline" id="my-account-btn">My Account</button>
+                <button class="btn btn-primary" id="login-btn">Login</button>
+            </div>
+        </div>
+    </header>
+
+    <main class="container">
+        <h1>My Accounts</h1>
+        <div class="account-tabs">
+            <div class="account-tab active" data-tab="active">Active Accounts</div>
+            <div class="account-tab" data-tab="orders">Order History</div>
+            <div class="account-tab" data-tab="reports">Reports</div>
+            <div class="account-tab" data-tab="profile">Profile</div>
+        </div>
+
+        <div class="account-content active" id="active-accounts">
+            <div class="no-data">No active accounts found</div>
+        </div>
+
+        <div class="account-content" id="order-history">
+            <div class="no-data">No order history found</div>
+        </div>
+
+        <div class="account-content" id="reports">
+            <div class="no-data">No reports found</div>
+        </div>
+
+        <div class="account-content" id="profile">
+            <div class="no-data">Please login to view profile</div>
+        </div>
+    </main>
+
+    <footer>
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h3>Quick Links</h3>
+                    <ul>
+                        <li><a href="../index.html">Home</a></li>
+                        <li><a href="accounts.html">My Accounts</a></li>
+                        <li><a href="feedback.html">Feedback</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h3>Support</h3>
+                    <ul>
+                        <li><a href="#">FAQ</a></li>
+                        <li><a href="#">Contact Us</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h3>Contact Info</h3>
+                    <div class="contact-info">
+                        <p>📧 support@aiaxcart.shop</p>
+                        <p>📞 +63 962 554 4105</p>
+                        <p>📍 Bulacan, Philippines</p>
+                    </div>
+                </div>
+            </div>
+            <div class="copyright">
+                © 2023 AIaxcart Premium Shop. All rights reserved.
+            </div>
+        </div>
+    </footer>
+
+    <!-- Report Modal -->
+    <div class="modal" id="report-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Report Issue</h2>
+                <button class="close-modal">&times;</button>
+            </div>
+            <form id="report-form">
+                <div class="form-group">
+                    <label for="report-account">Select Account</label>
+                    <select id="report-account" class="form-control" required>
+                        <!-- Active accounts will be dynamically populated -->
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="report-issue">Issue Description</label>
+                    <textarea id="report-issue" class="form-control" rows="4" placeholder="Describe the issue you're experiencing" required></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary" style="width: 100%;">Submit Report</button>
+            </form>
+        </div>
+    </div>
+
+    <script src="../js/auth.js"></script>
+    <script src="../js/account.js"></script>
+</body>
+</html>
