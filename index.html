@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AIaxcart Premium Shop</title>
+    <title>Aiaxcart Premium Shop</title>
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
@@ -11,13 +11,13 @@
     <header>
         <div class="container nav-container">
             <div class="logo">
-                <span>🌸</span> AIaxcart Premium Shop
+                <span>🛒</span> AIaxcart Premium Shop
             </div>
             <nav>
                 <ul>
-                    <li><a href="#" class="nav-link active" data-page="home">Home</a></li>
-                    <li><a href="#" class="nav-link" data-page="accounts">My Accounts</a></li>
-                    <li><a href="#" class="nav-link" data-page="feedback">Feedback</a></li>
+                    <li><a href="index.html" class="nav-link active">Home</a></li>
+                    <li><a href="pages/accounts.html" class="nav-link">My Accounts</a></li>
+                    <li><a href="pages/feedback.html" class="nav-link">Feedback</a></li>
                 </ul>
             </nav>
             <div class="auth-buttons">
@@ -29,27 +29,23 @@
 
     <!-- Main Content -->
     <main class="container">
-        <!-- Home Page -->
-        <div id="home-page" class="page active">
-            <section class="hero">
-                <h1>Premium Accounts at Affordable Prices</h1>
-                </section>
+        <section class="hero">
+            <h1>Premium Accounts at Affordable Prices</h1>
+            <p>Get access to premium streaming, educational, and editing accounts with our reliable service. Instant delivery after payment! 24/7 at your service!</p>
+        </section>
 
-            <section>
-                <div class="categories">
-                    <button class="category-btn active" data-category="all">All</button>
-                    <button class="category-btn" data-category="streaming">Streaming</button>
-                    <button class="category-btn" data-category="gaming">Educational</button>
-                    <button class="category-btn" data-category="software">Editing</button>
-                </div>
+        <section>
+            <div class="categories">
+                <button class="category-btn active" data-category="all">All</button>
+                <button class="category-btn" data-category="streaming">Streaming</button>
+                <button class="category-btn" data-category="educational">Gaming</button>
+                <button class="category-btn" data-category="editing">Software</button>
+            </div>
 
-                <div class="products-grid" id="products-container">
-                    <!-- Products loaded by JavaScript -->
-                </div>
-            </section>
-        </div>
-
-        <!-- Other pages will be loaded dynamically -->
+            <div class="products-grid" id="products-container">
+                <!-- Products will be loaded by JavaScript -->
+            </div>
+        </section>
     </main>
 
     <!-- Footer -->
@@ -59,9 +55,9 @@
                 <div class="footer-section">
                     <h3>Quick Links</h3>
                     <ul>
-                        <li><a href="#" class="nav-link" data-page="home">Home</a></li>
-                        <li><a href="#" class="nav-link" data-page="accounts">My Accounts</a></li>
-                        <li><a href="#" class="nav-link" data-page="feedback">Feedback</a></li>
+                        <li><a href="index.html">Home</a></li>
+                        <li><a href="pages/accounts.html">My Accounts</a></li>
+                        <li><a href="pages/feedback.html">Feedback</a></li>
                     </ul>
                 </div>
                 <div class="footer-section">
@@ -81,22 +77,68 @@
                 </div>
             </div>
             <div class="copyright">
-                © 2024 Aiaxcart Premium Shop. All rights reserved.
+                © 2023 Aiaxcart Premium Shop. All rights reserved.
             </div>
         </div>
     </footer>
 
-    <!-- Modals -->
-    <div id="modals-container">
-        <!-- Modals will be loaded here -->
+    <!-- Login Modal -->
+    <div class="modal" id="login-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Login</h2>
+                <button class="close-modal">&times;</button>
+            </div>
+            <form id="login-form">
+                <div class="form-group">
+                    <label for="login-email">Email</label>
+                    <input type="email" id="login-email" class="form-control" placeholder="Enter your email" required>
+                </div>
+                <div class="form-group">
+                    <label for="login-password">Password</label>
+                    <input type="password" id="login-password" class="form-control" placeholder="Enter your password" required>
+                </div>
+                <div class="form-group">
+                    <label for="login-role">Login as:</label>
+                    <select id="login-role" class="form-control">
+                        <option value="user">User</option>
+                        <option value="admin">Admin</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-primary" style="width: 100%;">Login</button>
+            </form>
+            <p style="text-align: center; margin-top: 1rem;">Don't have an account? <a href="#" id="show-register">Register here</a></p>
+        </div>
     </div>
 
-    <script src="js/config.js"></script>
+    <!-- Register Modal -->
+    <div class="modal" id="register-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Register</h2>
+                <button class="close-modal">&times;</button>
+            </div>
+            <form id="register-form">
+                <div class="form-group">
+                    <label for="register-name">Full Name</label>
+                    <input type="text" id="register-name" class="form-control" placeholder="Enter your full name" required>
+                </div>
+                <div class="form-group">
+                    <label for="register-email">Email</label>
+                    <input type="email" id="register-email" class="form-control" placeholder="Enter your email" required>
+                </div>
+                <div class="form-group">
+                    <label for="register-password">Password</label>
+                    <input type="password" id="register-password" class="form-control" placeholder="Create a password" required>
+                </div>
+                <button type="submit" class="btn btn-primary" style="width: 100%;">Register</button>
+            </form>
+            <p style="text-align: center; margin-top: 1rem;">Already have an account? <a href="#" id="show-login">Login here</a></p>
+        </div>
+    </div>
+
     <script src="js/auth.js"></script>
     <script src="js/products.js"></script>
-    <script src="js/checkout.js"></script>
-    <script src="js/admin.js"></script>
-    <script src="js/account.js"></script>
-    <script src="js/app.js"></script>
+    <script src="js/main.js"></script>
 </body>
 </html>
