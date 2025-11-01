@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel - AIaxcart Premium Shop</title>
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+    <header>
+        <div class="container nav-container">
+            <div class="logo">
+                <span>🛒</span> Aiaxcart Premium Shop
+            </div>
+            <nav>
+                <ul>
+                    <li><a href="../index.html" class="nav-link">Home</a></li>
+                    <li><a href="accounts.html" class="nav-link">My Accounts</a></li>
+                    <li><a href="feedback.html" class="nav-link">Feedback</a></li>
+                </ul>
+            </nav>
+            <div class="auth-buttons">
+                <button class="btn btn-outline" id="my-account-btn">Admin Panel</button>
+                <button class="btn btn-primary" id="login-btn">Logout</button>
+            </div>
+        </div>
+    </header>
+
+    <main class="container">
+        <h1>Admin Panel</h1>
+        <div class="admin-panel">
+            <div class="admin-tabs">
+                <div class="admin-tab active" data-tab="dashboard">Dashboard</div>
+                <div class="admin-tab" data-tab="products">Products</div>
+                <div class="admin-tab" data-tab="accounts">Account Stock</div>
+                <div class="admin-tab" data-tab="orders">Orders</div>
+                <div class="admin-tab" data-tab="sales">Sales History</div>
+            </div>
+
+            <div class="admin-content active" id="admin-dashboard">
+                <div class="stats-grid" id="admin-stats">
+                    <!-- Stats will be loaded here -->
+                </div>
+            </div>
+
+            <div class="admin-content" id="admin-products">
+                <h3>Product Management</h3>
+                <button class="btn btn-primary" id="add-product-btn">Add New Product</button>
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Name</th>
+                            <th>Category</th>
+                            <th>Price</th>
+                            <th>Stock</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="products-table">
+                        <!-- Products will be loaded here -->
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="admin-content" id="admin-accounts">
+                <h3>Account Stock Management</h3>
+                <button class="btn btn-primary" id="add-account-btn">Add Accounts</button>
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th>Product</th>
+                            <th>Type</th>
+                            <th>Email/Username</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="accounts-table">
+                        <!-- Accounts will be loaded here -->
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="admin-content" id="admin-orders">
+                <h3>Order Management</h3>
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th>Order ID</th>
+                            <th>Product</th>
+                            <th>Customer</th>
+                            <th>Amount</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="orders-table">
+                        <!-- Orders will be loaded here -->
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="admin-content" id="admin-sales">
+                <h3>Sales History</h3>
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Order ID</th>
+                            <th>Product</th>
+                            <th>Amount</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="sales-table">
+                        <!-- Sales will be loaded here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h3>Quick Links</h3>
+                    <ul>
+                        <li><a href="../index.html">Home</a></li>
+                        <li><a href="accounts.html">My Accounts</a></li>
+                        <li><a href="feedback.html">Feedback</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h3>Support</h3>
+                    <ul>
+                        <li><a href="#">FAQ</a></li>
+                        <li><a href="#">Contact Us</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h3>Contact Info</h3>
+                    <div class="contact-info">
+                        <p>📧 support@aiaxcart.shop</p>
+                        <p>📞 +63 962 554 4105</p>
+                        <p>📍 Bulacan, Philippines</p>
+                    </div>
+                </div>
+            </div>
+            <div class="copyright">
+                © 2023 Aiaxcart Premium Shop. All rights reserved.
+            </div>
+        </div>
+    </footer>
+
+    <!-- Add Product Modal -->
+    <div class="modal" id="add-product-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Add New Product</h2>
+                <button class="close-modal">&times;</button>
+            </div>
+            <form id="add-product-form">
+                <div class="form-group">
+                    <label for="product-name">Product Name</label>
+                    <input type="text" id="product-name" class="form-control" placeholder="Enter product name" required>
+                </div>
+                <div class="form-group">
+                    <label for="product-category">Category</label>
+                    <select id="product-category" class="form-control" required>
+                        <option value="streaming">Streaming</option>
+                        <option value="gaming">Gaming</option>
+                        <option value="software">Software</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="product-price">Base Price (₱)</label>
+                    <input type="number" id="product-price" class="form-control" placeholder="Enter base price" required>
+                </div>
+                <div class="form-group">
+                    <label for="product-description">Description</label>
+                    <textarea id="product-description" class="form-control" rows="3" placeholder="Enter product description"></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary" style="width: 100%;">Add Product</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add Accounts Modal -->
+    <div class="modal" id="add-accounts-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Add Account Stock</h2>
+                <button class="close-modal">&times;</button>
+            </div>
+            <form id="add-accounts-form">
+                <div class="form-group">
+                    <label for="account-product">Product</label>
+                    <select id="account-product" class="form-control" required>
+                        <!-- Products will be dynamically populated -->
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="account-type">Account Type</label>
+                    <select id="account-type" class="form-control" required>
+                        <option value="shared">Shared</option>
+                        <option value="solo">Solo</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="account-email">Email/Username</label>
+                    <input type="text" id="account-email" class="form-control" placeholder="Enter email or username" required>
+                </div>
+                <div class="form-group">
+                    <label for="account-password">Password</label>
+                    <input type="text" id="account-password" class="form-control" placeholder="Enter password" required>
+                </div>
+                <div class="form-group">
+                    <label for="account-profile">Profile (Optional)</label>
+                    <input type="text" id="account-profile" class="form-control" placeholder="Enter profile name">
+                </div>
+                <div class="form-group">
+                    <label for="account-pin">PIN (Optional)</label>
+                    <input type="text" id="account-pin" class="form-control" placeholder="Enter PIN">
+                </div>
+                <button type="submit" class="btn btn-primary" style="width: 100%;">Add Account</button>
+            </form>
+        </div>
+    </div>
+
+    <script src="../js/auth.js"></script>
+    <script src="../js/admin.js"></script>
+</body>
+</html>
