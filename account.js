@@ -1,191 +1,210 @@
-// User Account Management
+// Account Manager
 class AccountManager {
     constructor() {
-        this.reports = [];
+        this.checkoutManager = new CheckoutManager();
+        this.setupAccountListeners();
+        this.loadAccountPage();
     }
 
-    // Get user account summary
-    getUserSummary() {
-        if (!authManager.isLoggedIn()) return null;
-
-        const userOrders = checkoutManager.getUserOrders();
-        const activeAccounts = checkoutManager.getUserActiveAccounts();
-        const expiredAccounts = checkoutManager.getUserExpiredAccounts();
-        const totalSpent = userOrders
-            .filter(order => order.status === 'delivered')
-            .reduce((sum, order) => sum + order.amount, 0);
-
-        return {
-            totalOrders: userOrders.length,
-            activeAccounts: activeAccounts.length,
-            expiredAccounts: expiredAccounts.length,
-            totalSpent: totalSpent,
-            memberSince: authManager.getCurrentUser().createdAt
-        };
-    }
-
-    // Get user orders with pagination
-    getUserOrdersPaginated(page = 1, limit = 10) {
-        const userOrders = checkoutManager.getUserOrders();
-        const startIndex = (page - 1) * limit;
-        const endIndex = startIndex + limit;
-
-        return {
-            orders: userOrders.slice(startIndex, endIndex),
-            total: userOrders.length,
-            page: page,
-            totalPages: Math.ceil(userOrders.length / limit)
-        };
-    }
-
-    // Submit a report for an account
-    submitReport(orderId, issue) {
-        if (!authManager.isLoggedIn()) {
-            return { success: false, message: 'Please login to submit a report' };
-        }
-
-        const order = checkoutManager.getOrderById(orderId);
-        if (!order || order.userId !== authManager.getCurrentUser().id) {
-            return { success: false, message: 'Order not found' };
-        }
-
-        if (order.status !== 'delivered') {
-            return { success: false, message: 'Can only report issues for delivered accounts' };
-        }
-
-        const report = {
-            id: this.reports.length + 1,
-            orderId: orderId,
-            userId: authManager.getCurrentUser().id,
-            userName: authManager.getCurrentUser().name,
-            productName: order.productName,
-            issue: issue,
-            status: 'open',
-            createdAt: new Date().toISOString()
-        };
-
-        this.reports.push(report);
-        // In a real app, save to database
-        // DB.add('reports', report);
-
-        // Notify admin about the report
-        this.notifyAdminAboutReport(report);
-
-        return { success: true, message: 'Report submitted successfully' };
-    }
-
-    // Get user reports
-    getUserReports() {
-        if (!authManager.isLoggedIn()) return [];
-        return this.reports.filter(report => report.userId === authManager.getCurrentUser().id);
-    }
-
-    // Change user password
-    changePassword(currentPassword, newPassword) {
-        if (!authManager.isLoggedIn()) {
-            return { success: false, message: 'Not logged in' };
-        }
-
-        const user = authManager.getCurrentUser();
-        const users = DB.getAll(DB_KEYS.USERS);
-
-        // Find user in database
-        const userIndex = users.findIndex(u => u.id === user.id);
-        if (userIndex === -1) {
-            return { success: false, message: 'User not found' };
-        }
-
-        // Verify current password
-        if (users[userIndex].password !== currentPassword) {
-            return { success: false, message: 'Current password is incorrect' };
-        }
-
-        // Update password
-        users[userIndex].password = newPassword;
-        DB.saveAll(DB_KEYS.USERS, users);
-
-        // Update current user in auth manager
-        authManager.currentUser.password = newPassword;
-        authManager.saveCurrentUser();
-
-        return { success: true, message: 'Password changed successfully' };
-    }
-
-    // Update user profile
-    updateProfile(updates) {
-        if (!authManager.isLoggedIn()) {
-            return { success: false, message: 'Not logged in' };
-        }
-
-        const user = authManager.getCurrentUser();
-        const users = DB.getAll(DB_KEYS.USERS);
-
-        const userIndex = users.findIndex(u => u.id === user.id);
-        if (userIndex === -1) {
-            return { success: false, message: 'User not found' };
-        }
-
-        // Update user data
-        users[userIndex] = { ...users[userIndex], ...updates };
-        DB.saveAll(DB_KEYS.USERS, users);
-
-        // Update current user in auth manager
-        authManager.currentUser = { ...authManager.currentUser, ...updates };
-        authManager.saveCurrentUser();
-
-        return { success: true, message: 'Profile updated successfully' };
-    }
-
-    // Get account usage statistics
-    getAccountUsage() {
-        const activeAccounts = checkoutManager.getUserActiveAccounts();
-        const usageStats = {};
-
-        activeAccounts.forEach(account => {
-            const productName = account.productName;
-            if (!usageStats[productName]) {
-                usageStats[productName] = {
-                    productName: productName,
-                    count: 0,
-                    totalValue: 0,
-                    expiresSoon: 0
-                };
-            }
-
-            usageStats[productName].count++;
-            usageStats[productName].totalValue += account.amount;
-
-            // Check if expires in less than 7 days
-            const daysUntilExpiry = Math.ceil(
-                (new Date(account.expiresAt) - new Date()) / (1000 * 60 * 60 * 24)
-            );
-            if (daysUntilExpiry <= 7) {
-                usageStats[productName].expiresSoon++;
+    setupAccountListeners() {
+        // Account tabs
+        document.addEventListener('click', (e) => {
+            if (e.target.classList.contains('account-tab')) {
+                const tabName = e.target.getAttribute('data-tab');
+                document.querySelectorAll('.account-tab').forEach(t => t.classList.remove('active'));
+                e.target.classList.add('active');
+                document.querySelectorAll('.account-content').forEach(c => c.classList.remove('active'));
+                document.getElementById(`${tabName}-accounts`).classList.add('active');
+                this.loadAccountTab(tabName);
             }
         });
 
-        return Object.values(usageStats);
+        // Report form
+        const reportForm = document.getElementById('report-form');
+        if (reportForm) {
+            reportForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                this.handleSubmitReport();
+            });
+        }
     }
 
-    // Notify admin about report (simulated)
-    notifyAdminAboutReport(report) {
-        const message = `New account issue reported!\n\nReport #${report.id}\nProduct: ${report.productName}\nUser: ${report.userName}\nIssue: ${report.issue}`;
-        
-        console.log('ADMIN REPORT NOTIFICATION:', message);
-        // In a real app, send notification to admin
+    loadAccountPage() {
+        if (!authManager.isLoggedIn()) {
+            alert('Please login to view your accounts');
+            window.location.href = '../index.html';
+            return;
+        }
+
+        this.loadAccountTab('active');
     }
 
-    // Check for expiring accounts
-    getExpiringAccounts(daysThreshold = 7) {
-        const activeAccounts = checkoutManager.getUserActiveAccounts();
-        const now = new Date();
-        const thresholdDate = new Date(now.setDate(now.getDate() + daysThreshold));
+    loadAccountTab(tabName) {
+        switch (tabName) {
+            case 'active':
+                this.loadActiveAccounts();
+                break;
+            case 'orders':
+                this.loadOrderHistory();
+                break;
+            case 'reports':
+                this.loadReports();
+                break;
+            case 'profile':
+                this.loadProfile();
+                break;
+        }
+    }
 
-        return activeAccounts.filter(account => 
-            new Date(account.expiresAt) <= thresholdDate
+    loadActiveAccounts() {
+        const container = document.getElementById('active-accounts');
+        if (!container) return;
+
+        const activeAccounts = this.checkoutManager.getUserOrders().filter(order => 
+            order.status === 'delivered' && 
+            order.expiresAt && 
+            new Date(order.expiresAt) > new Date()
         );
+        
+        if (activeAccounts.length === 0) {
+            container.innerHTML = '<div class="no-data">No active accounts found</div>';
+            return;
+        }
+        
+        container.innerHTML = activeAccounts.map(account => `
+            <div class="account-card">
+                <div class="account-header">
+                    <h4>${account.productName}</h4>
+                    <span class="account-status status-active">Active</span>
+                </div>
+                <div class="account-expiry">
+                    Expires: ${new Date(account.expiresAt).toLocaleDateString()}
+                </div>
+                <div class="account-details">
+                    <h4>Account Details:</h4>
+                    <p><strong>Email:</strong> ${account.accountDetails.email}</p>
+                    <p><strong>Password:</strong> ${account.accountDetails.password}</p>
+                    ${account.accountDetails.profile ? `<p><strong>Profile:</strong> ${account.accountDetails.profile}</p>` : ''}
+                    ${account.accountDetails.pin ? `<p><strong>PIN:</strong> ${account.accountDetails.pin}</p>` : ''}
+                </div>
+                <button class="btn btn-outline report-btn" data-order="${account.id}">
+                    Report Issue
+                </button>
+            </div>
+        `).join('');
+
+        // Add event listeners to report buttons
+        container.querySelectorAll('.report-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const orderId = parseInt(btn.getAttribute('data-order'));
+                this.openReportModal(orderId);
+            });
+        });
+    }
+
+    loadOrderHistory() {
+        const container = document.getElementById('order-history');
+        if (!container) return;
+
+        const orders = this.checkoutManager.getUserOrders();
+        
+        if (orders.length === 0) {
+            container.innerHTML = '<div class="no-data">No order history found</div>';
+            return;
+        }
+        
+        container.innerHTML = orders.map(order => `
+            <div class="order-card">
+                <div class="order-header">
+                    <div class="order-id">Order #${order.id}</div>
+                    <span class="order-status status-${order.status}">${order.status}</span>
+                </div>
+                <p><strong>Product:</strong> ${order.productName}</p>
+                <p><strong>Type:</strong> ${order.accountType} ${order.profileType}</p>
+                <p><strong>Duration:</strong> ${order.duration}</p>
+                <p><strong>Amount:</strong> ${CONFIG.CURRENCY}${order.amount}</p>
+                <p><strong>Payment:</strong> ${order.paymentMethod}</p>
+                <p><strong>Date:</strong> ${new Date(order.createdAt).toLocaleDateString()}</p>
+                ${order.deliveredAt ? `<p><strong>Delivered:</strong> ${new Date(order.deliveredAt).toLocaleDateString()}</p>` : ''}
+            </div>
+        `).join('');
+    }
+
+    loadReports() {
+        const container = document.getElementById('reports');
+        if (!container) return;
+
+        // For now, show placeholder - you can implement reports functionality
+        container.innerHTML = `
+            <div class="no-data">
+                <p>No reports submitted yet.</p>
+                <p>Click "Report Issue" on any active account to submit a report.</p>
+            </div>
+        `;
+    }
+
+    loadProfile() {
+        const container = document.getElementById('profile');
+        if (!container) return;
+
+        const user = authManager.getCurrentUser();
+        const orders = this.checkoutManager.getUserOrders();
+        const totalSpent = orders
+            .filter(order => order.status === 'delivered')
+            .reduce((sum, order) => sum + order.amount, 0);
+
+        container.innerHTML = `
+            <div class="account-card">
+                <h3>Profile Information</h3>
+                <div class="profile-info">
+                    <p><strong>Name:</strong> ${user.name}</p>
+                    <p><strong>Email:</strong> ${user.email}</p>
+                    <p><strong>Member since:</strong> ${new Date(user.createdAt).toLocaleDateString()}</p>
+                    <p><strong>Total Orders:</strong> ${orders.length}</p>
+                    <p><strong>Total Spent:</strong> ${CONFIG.CURRENCY}${totalSpent}</p>
+                </div>
+            </div>
+        `;
+    }
+
+    openReportModal(orderId) {
+        const order = this.checkoutManager.getUserOrders().find(o => o.id === orderId);
+        if (!order) return;
+
+        // Populate account dropdown
+        const accountSelect = document.getElementById('report-account');
+        accountSelect.innerHTML = `<option value="${order.id}">${order.productName} (Order #${order.id})</option>`;
+
+        // Show modal
+        authManager.showModal('report');
+    }
+
+    handleSubmitReport() {
+        const accountSelect = document.getElementById('report-account');
+        const issueText = document.getElementById('report-issue');
+
+        if (!accountSelect.value || !issueText.value) {
+            alert('Please fill in all fields');
+            return;
+        }
+
+        const orderId = parseInt(accountSelect.value);
+        const issue = issueText.value;
+
+        // Here you would typically save the report to your database
+        console.log('Report submitted:', { orderId, issue });
+        
+        alert('Report submitted successfully! We will review your issue soon.');
+        authManager.closeAllModals();
+        
+        // Clear form
+        issueText.value = '';
     }
 }
 
-// Create global account manager instance
-const accountManager = new AccountManager();
+// Initialize account manager when DOM is loaded
+document.addEventListener('DOMContentLoaded', () => {
+    if (window.location.pathname.includes('accounts.html')) {
+        window.accountManager = new AccountManager();
+    }
+});
