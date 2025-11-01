@@ -1,14 +1,97 @@
-// Admin Panel Management
+// Admin Manager
 class AdminManager {
     constructor() {
-        this.stats = this.calculateStats();
+        this.checkoutManager = new CheckoutManager();
+        this.setupAdminListeners();
+        this.loadAdminPage();
     }
 
-    // Calculate dashboard statistics
-    calculateStats() {
-        const orders = DB.getAll(DB_KEYS.ORDERS);
-        const products = DB.getAll(DB_KEYS.PRODUCTS);
-        const accounts = DB.getAll(DB_KEYS.ACCOUNTS);
+    setupAdminListeners() {
+        // Admin tabs
+        document.addEventListener('click', (e) => {
+            if (e.target.classList.contains('admin-tab')) {
+                const tabName = e.target.getAttribute('data-tab');
+                document.querySelectorAll('.admin-tab').forEach(t => t.classList.remove('active'));
+                e.target.classList.add('active');
+                document.querySelectorAll('.admin-content').forEach(c => c.classList.remove('active'));
+                document.getElementById(`admin-${tabName}`).classList.add('active');
+                this.loadAdminTab(tabName);
+            }
+        });
+
+        // Add product button
+        const addProductBtn = document.getElementById('add-product-btn');
+        if (addProductBtn) {
+            addProductBtn.addEventListener('click', () => {
+                authManager.showModal('add-product');
+            });
+        }
+
+        // Add product form
+        const addProductForm = document.getElementById('add-product-form');
+        if (addProductForm) {
+            addProductForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                this.handleAddProduct();
+            });
+        }
+
+        // Add accounts button
+        const addAccountBtn = document.getElementById('add-account-btn');
+        if (addAccountBtn) {
+            addAccountBtn.addEventListener('click', () => {
+                this.populateProductDropdown();
+                authManager.showModal('add-accounts');
+            });
+        }
+
+        // Add accounts form
+        const addAccountsForm = document.getElementById('add-accounts-form');
+        if (addAccountsForm) {
+            addAccountsForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                this.handleAddAccounts();
+            });
+        }
+    }
+
+    loadAdminPage() {
+        if (!authManager.isLoggedIn() || !authManager.isAdmin()) {
+            alert('Access denied. Admin only.');
+            window.location.href = '../index.html';
+            return;
+        }
+
+        this.loadAdminTab('dashboard');
+    }
+
+    loadAdminTab(tabName) {
+        switch (tabName) {
+            case 'dashboard':
+                this.loadAdminDashboard();
+                break;
+            case 'products':
+                this.loadAdminProducts();
+                break;
+            case 'accounts':
+                this.loadAdminAccounts();
+                break;
+            case 'orders':
+                this.loadAdminOrders();
+                break;
+            case 'sales':
+                this.loadAdminSales();
+                break;
+        }
+    }
+
+    loadAdminDashboard() {
+        const container = document.getElementById('admin-stats');
+        if (!container) return;
+
+        const orders = this.checkoutManager.orders;
+        const products = productManager.products;
+        const accounts = productManager.accounts;
         const users = DB.getAll(DB_KEYS.USERS).filter(u => u.role === 'user');
 
         const today = new Date().toDateString();
@@ -20,169 +103,205 @@ class AdminManager {
             .filter(order => order.status === 'delivered')
             .reduce((sum, order) => sum + order.amount, 0);
 
-        return {
-            totalProducts: products.length,
-            totalUsers: users.length,
-            totalOrders: orders.length,
-            todayOrders: todayOrders.length,
-            availableAccounts: accounts.filter(acc => acc.status === 'available').length,
-            soldAccounts: accounts.filter(acc => acc.status === 'sold').length,
-            totalSales: totalSales,
-            pendingOrders: orders.filter(order => order.status === 'pending').length
-        };
+        const stats = [
+            { number: products.length, label: 'Total Products' },
+            { number: users.length, label: 'Total Users' },
+            { number: orders.length, label: 'Total Orders' },
+            { number: todayOrders.length, label: "Today's Orders" },
+            { number: accounts.filter(acc => acc.status === 'available').length, label: 'Available Accounts' },
+            { number: accounts.filter(acc => acc.status === 'sold').length, label: 'Sold Accounts' },
+            { number: totalSales, label: 'Total Sales', isCurrency: true },
+            { number: orders.filter(order => order.status === 'pending').length, label: 'Pending Orders' }
+        ];
+
+        container.innerHTML = stats.map(stat => `
+            <div class="stat-card">
+                <div class="stat-number">
+                    ${stat.isCurrency ? CONFIG.CURRENCY : ''}${stat.number}
+                </div>
+                <div class="stat-label">${stat.label}</div>
+            </div>
+        `).join('');
     }
 
-    // Get sales history
-    getSalesHistory(days = 30) {
-        const orders = DB.getAll(DB_KEYS.ORDERS);
-        const history = [];
-        
-        for (let i = days - 1; i >= 0; i--) {
-            const date = new Date();
-            date.setDate(date.getDate() - i);
-            const dateString = date.toDateString();
-            
-            const dayOrders = orders.filter(order => 
-                new Date(order.createdAt).toDateString() === dateString &&
-                order.status === 'delivered'
-            );
-            
-            const sales = dayOrders.reduce((sum, order) => sum + order.amount, 0);
-            
-            history.push({
-                date: dateString,
-                orders: dayOrders.length,
-                sales: sales
-            });
-        }
-        
-        return history;
-    }
+    loadAdminProducts() {
+        const container = document.getElementById('products-table');
+        if (!container) return;
 
-    // Get popular products
-    getPopularProducts() {
-        const orders = DB.getAll(DB_KEYS.ORDERS);
-        const productStats = {};
-        
-        orders.forEach(order => {
-            if (!productStats[order.productId]) {
-                productStats[order.productId] = {
-                    productName: order.productName,
-                    orders: 0,
-                    sales: 0
-                };
-            }
-            productStats[order.productId].orders++;
-            productStats[order.productId].sales += order.amount;
-        });
-        
-        return Object.values(productStats)
-            .sort((a, b) => b.orders - a.orders)
-            .slice(0, 5);
-    }
-
-    // Add bulk accounts
-    addBulkAccounts(productId, accountType, accountsData) {
-        const results = {
-            success: 0,
-            failed: 0,
-            errors: []
-        };
-
-        accountsData.forEach(accountData => {
-            try {
-                const account = {
-                    productId: parseInt(productId),
-                    type: accountType,
-                    email: accountData.email,
-                    password: accountData.password,
-                    profile: accountData.profile || '',
-                    pin: accountData.pin || ''
-                };
-
-                productManager.addAccountStock(account);
-                results.success++;
-            } catch (error) {
-                results.failed++;
-                results.errors.push(`Failed to add account: ${accountData.email}`);
-            }
-        });
-
-        return results;
-    }
-
-    // Update product
-    updateProduct(productId, updates) {
-        return productManager.updateProduct(productId, updates);
-    }
-
-    // Delete product
-    deleteProduct(productId) {
-        // Check if product has accounts
-        const productAccounts = productManager.accounts.filter(
-            acc => acc.productId === productId
-        );
-
-        if (productAccounts.length > 0) {
-            return { 
-                success: false, 
-                message: 'Cannot delete product with existing accounts. Delete accounts first.' 
-            };
-        }
-
-        const success = DB.remove(DB_KEYS.PRODUCTS, productId);
-        if (success) {
-            productManager.products = productManager.products.filter(
-                p => p.id !== productId
-            );
-            return { success: true, message: 'Product deleted successfully' };
-        }
-
-        return { success: false, message: 'Failed to delete product' };
-    }
-
-    // Get low stock products
-    getLowStockProducts(threshold = 5) {
         const products = productManager.getAllProducts();
-        return products.filter(product => product.stock < threshold);
+        
+        container.innerHTML = products.map(product => `
+            <tr>
+                <td>${product.id}</td>
+                <td>${product.name}</td>
+                <td>${product.category}</td>
+                <td>${CONFIG.CURRENCY}${product.basePrice}</td>
+                <td>${product.stock}</td>
+                <td>
+                    <button class="action-btn btn-deliver">Edit</button>
+                    <button class="action-btn btn-reject">Delete</button>
+                </td>
+            </tr>
+        `).join('');
     }
 
-    // Export data (for backup)
-    exportData() {
-        const data = {
-            products: DB.getAll(DB_KEYS.PRODUCTS),
-            accounts: DB.getAll(DB_KEYS.ACCOUNTS),
-            orders: DB.getAll(DB_KEYS.ORDERS),
-            users: DB.getAll(DB_KEYS.USERS),
-            feedback: DB.getAll(DB_KEYS.FEEDBACK),
-            exportDate: new Date().toISOString()
-        };
+    loadAdminAccounts() {
+        const container = document.getElementById('accounts-table');
+        if (!container) return;
 
-        return JSON.stringify(data, null, 2);
+        const accounts = productManager.getAllAccountStock();
+        
+        container.innerHTML = accounts.map(account => `
+            <tr>
+                <td>${account.productName}</td>
+                <td>${account.type}</td>
+                <td>${account.email}</td>
+                <td>
+                    <span class="account-status status-${account.status}">
+                        ${account.status}
+                    </span>
+                </td>
+                <td>
+                    <button class="action-btn btn-deliver">Edit</button>
+                </td>
+            </tr>
+        `).join('');
     }
 
-    // Import data (for restore)
-    importData(jsonData) {
-        try {
-            const data = JSON.parse(jsonData);
-            
-            if (data.products) DB.saveAll(DB_KEYS.PRODUCTS, data.products);
-            if (data.accounts) DB.saveAll(DB_KEYS.ACCOUNTS, data.accounts);
-            if (data.orders) DB.saveAll(DB_KEYS.ORDERS, data.orders);
-            if (data.users) DB.saveAll(DB_KEYS.USERS, data.users);
-            if (data.feedback) DB.saveAll(DB_KEYS.FEEDBACK, data.feedback);
-            
-            // Reload managers
-            productManager.products = DB.getAll(DB_KEYS.PRODUCTS);
-            productManager.accounts = DB.getAll(DB_KEYS.ACCOUNTS);
-            checkoutManager.orders = DB.getAll(DB_KEYS.ORDERS);
-            
-            return { success: true, message: 'Data imported successfully' };
-        } catch (error) {
-            return { success: false, message: 'Failed to import data: ' + error.message };
+    loadAdminOrders() {
+        const container = document.getElementById('orders-table');
+        if (!container) return;
+
+        const orders = this.checkoutManager.getAllOrders();
+        
+        container.innerHTML = orders.map(order => `
+            <tr>
+                <td>#${order.id}</td>
+                <td>${order.productName}</td>
+                <td>${order.userName} (${order.userEmail})</td>
+                <td>${CONFIG.CURRENCY}${order.amount}</td>
+                <td>
+                    <span class="order-status status-${order.status}">
+                        ${order.status}
+                    </span>
+                </td>
+                <td>
+                    ${order.status === 'pending' ? `
+                        <button class="action-btn btn-approve deliver-btn" data-order="${order.id}">
+                            Deliver
+                        </button>
+                    ` : ''}
+                    <button class="action-btn btn-deliver">View</button>
+                </td>
+            </tr>
+        `).join('');
+
+        // Add event listeners to deliver buttons
+        container.querySelectorAll('.deliver-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const orderId = parseInt(btn.getAttribute('data-order'));
+                this.deliverOrder(orderId);
+            });
+        });
+    }
+
+    loadAdminSales() {
+        const container = document.getElementById('sales-table');
+        if (!container) return;
+
+        const orders = this.checkoutManager.getAllOrders().filter(order => 
+            order.status === 'delivered' || order.status === 'expired'
+        );
+        
+        container.innerHTML = orders.map(order => `
+            <tr>
+                <td>${new Date(order.createdAt).toLocaleDateString()}</td>
+                <td>#${order.id}</td>
+                <td>${order.productName}</td>
+                <td>${CONFIG.CURRENCY}${order.amount}</td>
+                <td>
+                    <span class="order-status status-${order.status}">
+                        ${order.status}
+                    </span>
+                </td>
+            </tr>
+        `).join('');
+    }
+
+    populateProductDropdown() {
+        const select = document.getElementById('account-product');
+        if (!select) return;
+
+        select.innerHTML = '';
+        productManager.products.forEach(product => {
+            const option = document.createElement('option');
+            option.value = product.id;
+            option.textContent = product.name;
+            select.appendChild(option);
+        });
+    }
+
+    handleAddProduct() {
+        const name = document.getElementById('product-name').value;
+        const category = document.getElementById('product-category').value;
+        const price = parseInt(document.getElementById('product-price').value);
+        const description = document.getElementById('product-description').value;
+
+        productManager.addProduct({
+            name,
+            category,
+            basePrice: price,
+            description
+        });
+
+        authManager.closeAllModals();
+        alert('Product added successfully!');
+        this.loadAdminTab('products');
+        
+        // Clear form
+        document.getElementById('add-product-form').reset();
+    }
+
+    handleAddAccounts() {
+        const productId = parseInt(document.getElementById('account-product').value);
+        const type = document.getElementById('account-type').value;
+        const email = document.getElementById('account-email').value;
+        const password = document.getElementById('account-password').value;
+        const profile = document.getElementById('account-profile').value;
+        const pin = document.getElementById('account-pin').value;
+
+        productManager.addAccountStock({
+            productId,
+            type,
+            email,
+            password,
+            profile,
+            pin
+        });
+
+        authManager.closeAllModals();
+        alert('Account added successfully!');
+        this.loadAdminTab('accounts');
+        
+        // Clear form
+        document.getElementById('add-accounts-form').reset();
+    }
+
+    deliverOrder(orderId) {
+        const result = this.checkoutManager.deliverOrder(orderId);
+        if (result.success) {
+            alert(result.message);
+            this.loadAdminTab('orders');
+            this.loadAdminTab('dashboard');
+        } else {
+            alert(result.message);
         }
     }
 }
 
-// Create global admin manager instance
-const adminManager = new AdminManager();
+// Initialize admin manager when DOM is loaded
+document.addEventListener('DOMContentLoaded', () => {
+    if (window.location.pathname.includes('admin.html')) {
+        window.adminManager = new AdminManager();
+    }
+});
